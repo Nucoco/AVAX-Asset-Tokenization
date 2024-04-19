@@ -1,0 +1,19 @@
+{
+  "name": "avax-asset-tokenization",
+  "version": "1.0.0",
+  "description": "Asset tokenization",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
+  },
+  "scripts": {
+    "contract": "yarn workspace contract",
+    "client": "yarn workspace client",
+    "test": "yarn contract test"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

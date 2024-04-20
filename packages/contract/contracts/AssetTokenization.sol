@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
+import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 import "./FarmNft.sol";
 
-contract AssetTokenization {
+contract AssetTokenization is AutomationCompatibleInterface  {
     address[] private _farmers; // 農家のアドレスを保存します。
     mapping(address => FarmNft) private _farmerToNftContract; // 農家のアドレスとデプロイしたFarmNftをマッピングします。
 
@@ -98,5 +99,36 @@ contract AssetTokenization {
 
     function getFarmers() public view returns (address[] memory) {
         return _farmers;
+    }
+
+    // For upkeep that chainlink automation function.
+    // Check whether there are expired contracts.
+    // If checkUpkeep() returns true, chainlink automatically runs performUpkeep() that follows below.
+    function checkUpkeep(bytes calldata) external view override returns (bool upkeepNeeded, bytes memory) {
+        for (uint256 index = 0; index < _farmers.length; index++) {
+            address farmer = _farmers[index];
+            if (!availableContract(farmer)) {
+                continue;
+            }
+            if (_farmerToNftContract[farmer].isExpired()) {
+                return (true, "");
+            }
+        }
+        return (false, "");
+    }
+
+    // For chainlink.
+    // Burn expired NFT and delete NFT Contract.
+    function performUpkeep(bytes calldata) external override {
+        for (uint256 index = 0; index < _farmers.length; index++) {
+            address farmer = _farmers[index];
+            if (!availableContract(farmer)) {
+                continue;
+            }
+            if (_farmerToNftContract[farmer].isExpired()) {
+                _farmerToNftContract[farmer].burnNFT();
+                delete _farmerToNftContract[farmer];
+            }
+        }
     }
 }
